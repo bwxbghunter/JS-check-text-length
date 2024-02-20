@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+        .title {
+            width: 640px;
+            height: 40px;
+            line-height: 40px;
+            font-size: 14px;
+            color: #00b388;
+            border: 1px solid #ddd;
+            overflow: hidden;
+            /* text-overflow: ellipsis; */
+            white-space: nowrap;
+            /* box-sizing: border-box; */
+            padding: 0 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title" id="test">
+        <span class="content">近日，银行纷纷下调大额存单利率，但银行定期存款仍被疯抢。银行理财经理表示：有意向购买定期存款要尽快，不确定利率是否会再降。</span>
+    </div>
+    <script>
+        function getPadding(el) {
+            const domCss = window.getComputedStyle(el, null);
+            console.log(domCss);
+            const pl = Number.parseInt(domCss.paddingLeft, 10) || 0;
+            const pr = Number.parseInt(domCss.paddingRight, 10) || 0;
+            const pt = Number.parseInt(domCss.paddingTop, 10) || 0;
+            const pb = Number.parseInt(domCss.paddingBottom, 10) || 0;
+            console.log(pl, pr);
+            return {
+                left: pl,
+                right: pr,
+                bottom: pb,
+                top: pt
+            }
+        }
+        function checkLength(dom) {
+            const range = document.createRange();
+            range.setStart(dom, 0),
+                range.setEnd(dom, dom.childNodes.length);
+            let rangeWidth = range.getBoundingClientRect().width;
+            console.log(rangeWidth, dom.offsetWidth, dom.scrollWidth, dom.clientWidth);
+            const offsetWidth = rangeWidth - Math.floor(rangeWidth);
+            if (offsetWidth < 0.001) {
+                rangeWidth = Math.floor(rangeWidth);
+            }
+            const { left, right } = getPadding(testDom);
+            const paddingWidth = left + right;
+            return {
+                status: paddingWidth + rangeWidth > dom.clientWidth,
+                width: dom.clientWidth - paddingWidth
+            };
+        }
+        function setTextContent(text, testDom) {
+            const { status, width } = checkLength(testDom);
+            let str = '';
+            if (status) {
+                let reverseStr = text.split('').reverse().join('');
+                const leftText = calcTextLength(text, width);
+                const rightText = calcTextLength(reverseStr, width);
+                reverseStr = reverseStr.substring(0, rightText);
+                reverseStr = reverseStr.split('').reverse().join('');
+                str = `${text.substring(0, leftText - 1)}...${reverseStr}`;
+            } else {
+                str = text;
+            }
+            testDom.innerHTML = str;
+        }
+        function calcTextLength(text, width) {
+            let realLength = 0;
+            let index = 0;
+            for (let i = 0; i < text.length; i++) {
+                charCode = text.charCodeAt(i);
+                if (charCode >= 0 && charCode <= 128) {
+                    realLength += 1;
+                } else {
+                    console.log('zhixingle')
+                    realLength += 2 * 14; // 14是字体大小
+                }
+                if (realLength >= width) {
+                    index = i;
+                    break;
+                }
+            }
+            return index;
+        }
+        const testDom = document.getElementById('test');
+        setTextContent('近日，银行纷纷下调大额存单利率，但银行定期存款仍被疯抢。银行理财经理表示：有意向购买定期存款要尽快，不确定利率是否会再降。', testDom);
+        
+        // 获取文本长度
+        function getTextWidth(text, font = 14) {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d")
+            context.font = font
+            const metrics = context.measureText(text);
+            return metrics.width
+        }
+        // console.log(getTextWidth('近日，银行纷纷下调大额存单利率，但银行定期存款仍被疯抢。银行理财经理表示：有意向购买定期存款要尽快，不确定利率是否会再降。'), '---')
+
+        // 通过创建相同的div来获取没有设置overflow:hidden时的元素宽度
+        function getDomDivWidth(box) {
+            const elementWidth = box.clientWidth;
+            const tempElement = document.createElement('div');
+            const style = window.getComputedStyle(box, null)
+            const { left, right } = getPadding(box);
+            tempElement.style.cssText = `
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+                white-space: nowrap;
+                padding-left:${style.paddingLeft};
+                padding-right:${style.paddingRight};
+                font-size: ${style.fontSize};
+                font-family: ${style.fontFamily};
+                font-weight: ${style.fontWeight};
+                letter-spacing: ${style.letterSpacing};
+            `;
+            tempElement.textContent = box.textContent;
+            document.body.appendChild(tempElement);
+            const obj = {
+                status: tempElement.clientWidth + right + left > elementWidth,
+                width: elementWidth - left - right
+            }
+            console.log(tempElement.clientWidth, elementWidth, '###', left, right)
+            document.body.removeChild(tempElement);
+            return obj;
+            // if (tempElement.clientWidth >= elementWidth) {
+            //     result.textContent = '存在省略号'
+            // } else {
+            //     result.textContent = '容器宽度足够，没有省略号了'
+            // }
+            // document.body.removeChild(tempElement);
+        }
+        // console.log(getDomDivWidth(testDom), checkLength(testDom))
+
+        // 创建一个block元素来包裹inline元素
+        const content = document.querySelector('.content');
+        function getBlockDomWidth(box) {
+            const { left, right } = getPadding(box);
+            console.log(box.clientWidth, content.clientWidth)
+            const obj = {
+                status: box.clientWidth < content.clientWidth + left + right,
+                width: box.clientWidth - left - right
+            }
+            return obj;
+        }
+        // console.log(getBlockDomWidth(testDom))
+    </script>
+</body>
+
+</html>
